@@ -1,4 +1,16 @@
 from django.shortcuts import render
+from django.http import JsonResponse
+import sys
+import os
+from pathlib import Path
+from LLM import LLM_loader
+
+# Add the LLM module to the Python path
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+LLM_DIR = os.path.join(BASE_DIR, "LLM")
+sys.path.append(str(LLM_DIR))
+
+llm = LLM_loader()
 
 # Create your views here.
 def chat_view(request):
