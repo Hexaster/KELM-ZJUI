@@ -97,6 +97,16 @@
             background-color: #A8A8A8;
             cursor: not-allowed;
         }
+        #clear-button {
+            padding: 0 20px;
+            background-color: #ec507f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -106,7 +116,7 @@
         </div>
         <div class="messages-container">
             {% for message in messages %}
-                {% if message.user %}
+                {% if message.role == "user" %}
                     <div class="message user-message">{{ message.text }}</div>
                 {% else %}
                     <div class="message bot-message">{{ message.text }}</div>
@@ -122,7 +132,8 @@
                 rows="1"
                 required
             ></textarea>
-            <button type="submit" id="send-button">Send</button>
+            <button type="submit" id="clear-button" name="clear-button" formnovalidate>Clear</button>
+            <button type="submit" id="send-button" name="send-button">Send</button>
         </form>
     </div>
 
@@ -130,6 +141,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const messageInput = document.getElementById('message-input');
             const sendButton = document.getElementById('send-button');
+            const clearButton = document.getElementById('clear-button');
             const messagesContainer = document.querySelector('.messages-container');
 
             // Auto-resize textarea

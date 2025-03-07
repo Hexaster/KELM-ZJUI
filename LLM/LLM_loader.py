@@ -11,19 +11,21 @@ class LLM_loader:
         # Ensure that the history always contain the prompt from the system
         self.default_system_prompt = {
         "role": "system",
-        "content": "You are KELM, a knowledge-enhanced language model that can help you answer questions about your knowledge base."
+        "text": "You are KELM, a knowledge-enhanced language model that can help you answer questions about your knowledge base."
     }
-        self.messages = [self.default_system_prompt]
+        self.chat_history = [self.default_system_prompt]
         pass
 
-    def set_messages(self, messages):
-        # If we already have messages, we can directly set it.
-        # The first role of the messages is not system, we add it manually.
-        # Otherwise, we just use the messages.
-        if messages[0].get("role") != "system":
-            self.messages = [self.default_system_prompt] + messages
-        else:
-            self.messages = messages
+    def set_chat_history(self, messages):
+        """
+        If we already have messages, we can directly set it.
+        :param messages: A list of dictionaries, where each dictionary represents a
+            message. Each message must contain a "role" key which specifies its type,
+            such as "system", "user", or "assistant". The content of the messages
+            defines the interaction flow.
+        :return: None
+        """
+        self.messages = [self.default_system_prompt] + messages
         pass
 
     def apply_chat_template(self):
@@ -31,23 +33,23 @@ class LLM_loader:
         #NEW_RESPONSE_MARKER = "[NEW_RESPONSE]"
         for message in self.messages:
             if message["role"] == "system":
-                conversation += f"<|im_start|>System: {message['content']}<|im_end|>\n"
+                conversation += f"<|im_start|>System: {message['text']}<|im_end|>\n"
             elif message["role"] == "user":
-                conversation += f"<|im_start|>User: {message['content']}<|im_end|>\n"
+                conversation += f"<|im_start|>User: {message['text']}<|im_end|>\n"
             elif message["role"] == "assistant":
-                conversation += f"<|im_start|>Assistant: {message['content']}<|im_end|>\n"
+                conversation += f"<|im_start|>Assistant: {message['text']}<|im_end|>\n"
         if self.messages[-1]["role"] == "user":
             #conversation += f"Assistant: {NEW_RESPONSE_MARKER}"
             conversation += "<|im_start|>Assistant: "
         return conversation
 
-    def generate_response(self, prompt, max_new_tokens = 50, temperature = 0.6):
+    def generate_response(self, prompt, max_new_tokens = 128, temperature = 0.6):
         """
         Generates a response based on the provided input prompt using a language model.
         :param prompt: The prompt from the user.
         :type prompt: str
         :param max_new_tokens: The maximum number of new tokens to generate in the
-            response. Defaults to 50.
+            response.
         :type max_new_tokens: int, optional
         :param temperature: Sampling temperature to control randomness in the
             generation. Lower values make the output more deterministic, while higher
@@ -57,7 +59,7 @@ class LLM_loader:
         :rtype: str
         """
         # Append user's prompt to self.message so the history is updated
-        self.messages.append({"role": "user", "content": prompt})
+        self.messages.append({"role": "user", "text": prompt})
         # Apply the chat template
         input_text = self.apply_chat_template()
         #input_text = self.tokeniser.apply_chat_template(self.messages, tokenize=False)
@@ -75,7 +77,7 @@ class LLM_loader:
             )
         generated_text = self.tokeniser.decode(outputs[0][prompt_length:], skip_special_tokens=True)
         # Append AI's response to messages
-        self.messages.append({"role": "assistant", "content": generated_text})
+        self.messages.append({"role": "assistant", "text": generated_text})
         return generated_text
 
 
