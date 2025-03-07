@@ -1,15 +1,46 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+# This class loads a llm from hugging face, in order to interact with Django
 class LLM_loader:
     def __init__(self, model_name = "HuggingFaceTB/SmolLM2-135M-Instruct"):
         # Load the model
         self.tokeniser = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name,
                                                      device_map="auto")
-        # Set up the system prompt and assistant marker first
-        self.system_prompt = "<|im_start|>system\nYou are a helpful AI assistant to answer questions for people\n<|im_end|>"
-        self.assistant_marker = "<|im_start|>assistant\n"
+        # Ensure that the history always contain the prompt from the system
+        self.default_system_prompt = {
+        "role": "system",
+        "content": "You are KELM, a knowledge-enhanced language model that can help you answer questions about your knowledge base."
+    }
+        self.messages = [self.default_system_prompt]
+        pass
+
+    def set_messages(self, messages):
+        # If we already have messages, we can directly set it.
+        # The first role of the messages is not system, we add it manually.
+        # Otherwise, we just use the messages.
+        if messages[0].get("role") != "system":
+            self.messages = [self.default_system_prompt] + messages
+        else:
+            self.messages = messages
+        pass
+
+    def apply_chat_template(self):
+        conversation = ""
+        #NEW_RESPONSE_MARKER = "[NEW_RESPONSE]"
+        for message in self.messages:
+            if message["role"] == "system":
+                conversation += f"<|im_start|>System: {message['content']}<|im_end|>\n"
+            elif message["role"] == "user":
+                conversation += f"<|im_start|>User: {message['content']}<|im_end|>\n"
+            elif message["role"] == "assistant":
+                conversation += f"<|im_start|>Assistant: {message['content']}<|im_end|>\n"
+        if self.messages[-1]["role"] == "user":
+            #conversation += f"Assistant: {NEW_RESPONSE_MARKER}"
+            conversation += "<|im_start|>Assistant: "
+        return conversation
+
     def generate_response(self, prompt, max_new_tokens = 50, temperature = 0.6):
         """
         Generates a response based on the provided input prompt using a language model.
@@ -25,12 +56,14 @@ class LLM_loader:
         :return: The generated textual response from the model.
         :rtype: str
         """
-        # Format the user prompt with the appropriate tokens
-        user_prompt = f"<|im_start|>user\n{prompt}\n<|im_end|>"
-        # Combine everything into one complete prompt
-        full_prompt = self.system_prompt + "\n" + user_prompt + "\n" + self.assistant_marker
-
-        inputs = self.tokeniser(full_prompt, return_tensors="pt").to(self.model.device)
+        # Append user's prompt to self.message so the history is updated
+        self.messages.append({"role": "user", "content": prompt})
+        # Apply the chat template
+        input_text = self.apply_chat_template()
+        #input_text = self.tokeniser.apply_chat_template(self.messages, tokenize=False)
+        inputs = self.tokeniser(input_text, return_tensors="pt").to(self.model.device)
+        # Get the length of the prompt so we can trim the generated text later
+        prompt_length = inputs.input_ids.shape[1]
         with torch.no_grad():
             outputs = self.model.generate(
                 input_ids=inputs.input_ids,
@@ -40,7 +73,9 @@ class LLM_loader:
                 top_p=0.9,
                 do_sample=True
             )
-        generated_text = self.tokeniser.decode(outputs[0], skip_special_tokens=True)
+        generated_text = self.tokeniser.decode(outputs[0][prompt_length:], skip_special_tokens=True)
+        # Append AI's response to messages
+        self.messages.append({"role": "assistant", "content": generated_text})
         return generated_text
 
 
@@ -58,6 +93,7 @@ def main():
             break
 
         print("\nGenerating response...")
+
         response = llm.generate_response(user_input)
         print(f"\nResponse: {response}")
 
