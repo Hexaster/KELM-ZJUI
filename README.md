@@ -22,3 +22,7 @@ python manage.py runserver
 7/3/2025
 
 Basic function completed, now it can at least be used to have a conversation (at some extent).
+
+10/3/2025
+
+Adding graph database.
