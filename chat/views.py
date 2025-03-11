@@ -31,5 +31,5 @@ def get_response(chat_history, messages):
     llm = get_llm()
     llm.set_chat_history(chat_history)
     #print(llm.messages)
-    response = llm.generate_response(messages)
+    response = llm.generate_response(messages, db_access=True)
     return response
