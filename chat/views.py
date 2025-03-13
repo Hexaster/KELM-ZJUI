@@ -6,7 +6,7 @@ llm = None
 # Create your views here.
 def chat_view(request):
     chat_history = request.session.get('chat_messages', []) #Get chat history
-    print(chat_history)
+    #print(chat_history)
     if request.method == 'POST' and 'clear-button' in request.POST:
         # If "clear" was hit, clear everything
         request.session.flush()
@@ -30,6 +30,5 @@ def get_llm():
 def get_response(chat_history, messages):
     llm = get_llm()
     llm.set_chat_history(chat_history)
-    #print(llm.messages)
     response = llm.generate_response(messages, db_access=True)
     return response

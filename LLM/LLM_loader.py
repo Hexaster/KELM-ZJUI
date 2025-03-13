@@ -1,6 +1,5 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
-
 from DS import Neo4jEncoder
 from GDB import GDB
 

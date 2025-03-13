@@ -7,8 +7,8 @@ class Neo4jEncoder:
     def __init__(self):
         self.client = OpenAI(api_key="sk-1a1f87fcaa23438d9f630f822d729d63", base_url="https://api.deepseek.com")
         self.gdb = GDB()
-        self.messages = [
-            {"role": "system", "content": "You are a Neo4j encoder to translate users' natural language to Neo4j queries."
+        self.system_messages = [
+            {"role": "system", "content": "You are a Neo4j encoding assistant to translate users' natural language to Neo4j queries."
                                           "Here's the metadata for the database:"
                                           f"node schema: {self.gdb.node_schema}"
                                           f"relation schema: {self.gdb.rel_schema}"
@@ -17,6 +17,7 @@ class Neo4jEncoder:
                                           f"Please be aware of users' typos, you should correct them."
                                           f"Please return the cypher code only, do not include any explanations or additional text, do not include ```cypher```."}
         ]
+        self.messages = self.system_messages
         pass
 
     def encode(self, input):
@@ -31,7 +32,10 @@ class Neo4jEncoder:
             messages=self.messages,
             stream = False
         )
-        return response.choices[0].message.content
+        result = response.choices[0].message.content
+        print(result)
+        self.system_messages.append({"role": "assistant", "content": result})
+        return result
 
 '''
 encoder = Neo4jEncoder()
